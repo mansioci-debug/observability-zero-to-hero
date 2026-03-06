@@ -11,27 +11,71 @@ App throws an error → log collected by Fluentd → visualized in Kibana
 CPU spike → metric scraped by Node Exporter → Prometheus alert
 User request slow → trace collected by Jaeger → shows which service caused delay
 
-| Component              | Default Port | Purpose / Notes                                                                          |
-| ---------------------- | ------------ | ---------------------------------------------------------------------------------------- |
-| **Prometheus**         | `9090`       | Main Prometheus web UI and API; scrapes metrics from exporters                           |
-| **Alertmanager**       | `9093`       | Receives alerts from Prometheus and routes notifications (Slack, email, PagerDuty, etc.) |
-| **MySQL Exporter**     | `9104`       | Exposes MySQL database metrics at `/metrics` for Prometheus to scrape                    |
-| **Node Exporter**      | `9100`       | Exposes server/OS metrics (CPU, memory, disk, network)                                   |
-| **Grafana**            | `3000`       | Web UI to visualize metrics collected by Prometheus                                      |
-| **kube-state-metrics** | `8080`       | Exposes Kubernetes cluster state metrics (pods, deployments, nodes, jobs, etc.)          |
-
 ==============================================================================================================
-Full Interview Explanation – MySQL Monitoring with Prometheus
 
-*"To monitor MySQL with Prometheus, I started by creating a dedicated read-only MySQL user. This user has only the necessary privileges (PROCESS, REPLICATION CLIENT, and SELECT) so that the exporter can safely read metrics without any risk of modifying the database.
+🎤 5-Minute Java Observability Script with Examples
 
-Next, I deployed the official MySQL Exporter, either as a standalone process or as a Kubernetes deployment using a stateless.mysql.yaml file. I configured the exporter with the DATA_SOURCE_NAME environment variable pointing to the MySQL host, username, and password. By default, the exporter exposes metrics on port 9104 at the /metrics endpoint.
+*"For observability in a Java microservice, I instrumented the app using the Prometheus Java client. I exposed both JVM metrics and custom application metrics.
 
-Then, I edited the Prometheus configuration file (prometheus.yml) to add a new scrape job for MySQL, specifying the exporter host and port. This allows Prometheus to periodically scrape the /metrics endpoint and collect database statistics such as mysql_global_status_queries, mysql_global_status_threads_connected, and buffer pool usage.
+Example 1 – JVM Metrics: Using simpleclient_hotspot, Prometheus automatically collects heap usage, garbage collection stats, and thread counts. For instance, jvm_memory_used_bytes shows the memory currently used by the application.
 
-After deploying, I verified the setup in the Prometheus UI under Status → Targets, ensuring the MySQL exporter was UP and returning metrics. Optionally, I added Grafana as a visualization layer to create dashboards that track query throughput, active connections, slow queries, and other performance metrics.
+Example 2 – Custom Metrics: Developers added a counter for HTTP requests and a histogram for request durations:
 
-For production setups, I also considered service discovery in Kubernetes, TLS connections, and alerting rules in Prometheus to get notified of anomalies like too many connections or high query latency.
+``` static final Counter httpRequests = Counter.build()
+    .name("http_requests_total")
+    .help("Total HTTP requests")
+    .register();
+
+static final Histogram requestDuration = Histogram.build()
+    .name("http_request_duration_seconds")
+    .help("Request duration in seconds")
+    .register();
+```
+
+These metrics are exposed at the /metrics endpoint on port 8080.
+
+Next, I containerized the service using Docker:
+
+``` docker build -t myrepo/java-app:latest .
+docker run -p 8080:8080 myrepo/java-app:latest
+```
+
+and deployed it to Kubernetes using a Deployment and Service.
+
+Prometheus is configured to scrape metrics from the Java app, along with Node Exporter for system metrics (port 9100) and MySQL Exporter for database metrics (port 9104). For example, the Prometheus scrape_configs for the Java app:
+
+scrape_configs:
+  - job_name: 'java-app'
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: java-app
+
+This ensures Prometheus dynamically discovers all pods running the Java service.
+
+Alerts: Using Alertmanager on port 9093, I configured alerts such as:
+
+High CPU Usage: Triggered if CPU > 70% for 5 minutes
+
+Pod Restarts: Triggered if a pod restarts more than twice
+
+For instance, if the Java app crashes multiple times, Alertmanager sends an email notification.
+
+Visualization: Grafana dashboards (port 3000) display JVM metrics, HTTP request counts, response times, and database metrics.
+
+Logging & Tracing: I implemented structured logging using the EFK stack (Elasticsearch, FluentBit, Kibana) to collect logs from both the app and nodes. For distributed tracing, I used Jaeger to track requests across microservices, enabling easy debugging of performance issues."*
+
+| Component           | Port | Notes                            |
+| ------------------- | ---- | -------------------------------- |
+| Java App `/metrics` | 8080 | Scraped by Prometheus            |
+| Prometheus          | 9090 | Main UI and API                  |
+| Alertmanager        | 9093 | Sends notifications              |
+| Node Exporter       | 9100 | Server metrics                   |
+| Grafana             | 3000 | Dashboards                       |
+| kube-state-metrics  | 8080 | Kubernetes cluster state metrics |
+
 
 ```
 prometheus.yaml
