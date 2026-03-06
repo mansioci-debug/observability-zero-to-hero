@@ -55,13 +55,43 @@ scrape_configs:
 
 This ensures Prometheus dynamically discovers all pods running the Java service.
 
-Alerts: Using Alertmanager on port 9093, I configured alerts such as:
+In production, I integrate HashiCorp Vault with Alertmanager to manage Slack webhooks securely. The webhook is stored in Vault, injected into the Alertmanager pod, and referenced in the AlertmanagerConfig. Alerts like High CPU usage or Pod restarts are routed to the Slack receiver with repeat intervals, and all sensitive data remains secure and auditable. 
+``` # Enable KV engine if not already
+vault secrets enable -path=secret kv-v2
 
-High CPU Usage: Triggered if CPU > 70% for 5 minutes
+# Store Slack webhook in Vault
+vault kv put secret/alertmanager slack-webhook=https://hooks.slack.com/services/TOKEN
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: slack-alert-config
+  namespace: monitoring
+spec:
+  route:
+    receiver: 'slack-notifications'
+    repeatInterval: 10m
+    routes:
+      - matchers:
+          - name: alertname
+            value: HighCpuUsage
+        receiver: 'slack-notifications'
+        repeatInterval: 5m
+      - matchers:
+          - name: alertname
+            value: PodRestart
+        receiver: 'slack-notifications'
+        repeatInterval: 1m
 
-Pod Restarts: Triggered if a pod restarts more than twice
-
-For instance, if the Java app crashes multiple times, Alertmanager sends an email notification.
+  receivers:
+    - name: 'slack-notifications'
+      slackConfigs:
+        - sendResolved: true
+          channel: '#alerts'
+          text: "🚨 Alert: {{ .CommonAnnotations.summary }}\nSeverity: {{ .CommonLabels.severity }}\nInstance: {{ .CommonLabels.instance }}"
+          apiURL:
+            file: /vault/secrets/slack  # Vault-injected secret
+    - name: 'null'  # Catch-all receiver
+```
 
 Visualization: Grafana dashboards (port 3000) display JVM metrics, HTTP request counts, response times, and database metrics.
 
