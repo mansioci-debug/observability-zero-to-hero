@@ -8,40 +8,42 @@
 Simple example:
 
 App throws an error → log collected by Fluentd → visualized in Kibana
-
 CPU spike → metric scraped by Node Exporter → Prometheus alert
-
 User request slow → trace collected by Jaeger → shows which service caused delay
+
 ==============================================================================================================
+Full Interview Explanation – MySQL Monitoring with Prometheus
 
+*"To monitor MySQL with Prometheus, I started by creating a dedicated read-only MySQL user. This user has only the necessary privileges (PROCESS, REPLICATION CLIENT, and SELECT) so that the exporter can safely read metrics without any risk of modifying the database.
 
-``` # Global settings applied to all scrape jobs
+Next, I deployed the official MySQL Exporter, either as a standalone process or as a Kubernetes deployment using a stateless.mysql.yaml file. I configured the exporter with the DATA_SOURCE_NAME environment variable pointing to the MySQL host, username, and password. By default, the exporter exposes metrics on port 9104 at the /metrics endpoint.
+
+Then, I edited the Prometheus configuration file (prometheus.yml) to add a new scrape job for MySQL, specifying the exporter host and port. This allows Prometheus to periodically scrape the /metrics endpoint and collect database statistics such as mysql_global_status_queries, mysql_global_status_threads_connected, and buffer pool usage.
+
+After deploying, I verified the setup in the Prometheus UI under Status → Targets, ensuring the MySQL exporter was UP and returning metrics. Optionally, I added Grafana as a visualization layer to create dashboards that track query throughput, active connections, slow queries, and other performance metrics.
+
+For production setups, I also considered service discovery in Kubernetes, TLS connections, and alerting rules in Prometheus to get notified of anomalies like too many connections or high query latency.
+
+```
+prometheus.yaml
+ # Global settings applied to all scrape jobs
 global:
   scrape_interval: 15s         # How often Prometheus scrapes metrics
   evaluation_interval: 15s     # How often rules are evaluated
 
-# Scrape jobs
-scrape_configs:
+MySQL Exporter is running in pods that can restart or scale, you don’t use static targets. Instead, you use Kubernetes service discovery:
 
-  # Prometheus server's own metrics
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
+- job_name: 'mysql'
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_pod_label_app]
+      action: keep
+      regex: mysqld-exporter
 
-  # Node Exporter (server metrics) - optional
-  - job_name: 'node'
-    static_configs:
-      - targets: ['localhost:9100']
+Prometheus automatically discovers all pods with label app=mysqld-exporter
 
-  # MySQL Exporter (database metrics) - optional
-  - job_name: 'mysql'
-    static_configs:
-      - targets: ['localhost:9104']
-
-  # Custom application metrics - optional
-  - job_name: 'custom-app'
-    static_configs:
-      - targets: ['localhost:8080']
+No need to manually update targets if pods move or restart
 ```
 
 # Monitoring
