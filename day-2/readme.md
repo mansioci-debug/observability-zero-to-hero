@@ -15,6 +15,35 @@ User request slow → trace collected by Jaeger → shows which service caused d
 ==============================================================================================================
 
 
+``` # Global settings applied to all scrape jobs
+global:
+  scrape_interval: 15s         # How often Prometheus scrapes metrics
+  evaluation_interval: 15s     # How often rules are evaluated
+
+# Scrape jobs
+scrape_configs:
+
+  # Prometheus server's own metrics
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter (server metrics) - optional
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+
+  # MySQL Exporter (database metrics) - optional
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['localhost:9104']
+
+  # Custom application metrics - optional
+  - job_name: 'custom-app'
+    static_configs:
+      - targets: ['localhost:8080']
+```
+
 # Monitoring
 
 ## Metrics vs Monitoring
