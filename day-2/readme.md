@@ -1,3 +1,20 @@
+# three pillars of observability with EFK:
+
+| Pillar      | What it does                        | Example (EFK stack)                                                                                          |
+| ----------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Logs**    | Record events from apps and systems | **Elasticsearch + Fluentd + Kibana (EFK)**: Fluentd collects logs → Elasticsearch stores → Kibana visualizes |
+| **Metrics** | Numeric measurements over time      | **Prometheus + Node Exporter / App metrics**: CPU, memory, request counts, error rates                       |
+| **Traces**  | Track a request across services     | **Jaeger / OpenTelemetry**: Shows request flow in microservices, latency per service                         |
+Simple example:
+
+App throws an error → log collected by Fluentd → visualized in Kibana
+
+CPU spike → metric scraped by Node Exporter → Prometheus alert
+
+User request slow → trace collected by Jaeger → shows which service caused delay
+==============================================================================================================
+
+
 # Monitoring
 
 ## Metrics vs Monitoring
