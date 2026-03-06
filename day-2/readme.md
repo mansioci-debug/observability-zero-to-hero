@@ -11,6 +11,15 @@ App throws an error → log collected by Fluentd → visualized in Kibana
 CPU spike → metric scraped by Node Exporter → Prometheus alert
 User request slow → trace collected by Jaeger → shows which service caused delay
 
+| Component              | Default Port | Purpose / Notes                                                                          |
+| ---------------------- | ------------ | ---------------------------------------------------------------------------------------- |
+| **Prometheus**         | `9090`       | Main Prometheus web UI and API; scrapes metrics from exporters                           |
+| **Alertmanager**       | `9093`       | Receives alerts from Prometheus and routes notifications (Slack, email, PagerDuty, etc.) |
+| **MySQL Exporter**     | `9104`       | Exposes MySQL database metrics at `/metrics` for Prometheus to scrape                    |
+| **Node Exporter**      | `9100`       | Exposes server/OS metrics (CPU, memory, disk, network)                                   |
+| **Grafana**            | `3000`       | Web UI to visualize metrics collected by Prometheus                                      |
+| **kube-state-metrics** | `8080`       | Exposes Kubernetes cluster state metrics (pods, deployments, nodes, jobs, etc.)          |
+
 ==============================================================================================================
 Full Interview Explanation – MySQL Monitoring with Prometheus
 
