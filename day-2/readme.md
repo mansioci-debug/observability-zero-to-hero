@@ -6,6 +6,14 @@ Metrics are measurements or data points that tell you what is happening. For exa
 
 Monitoring is the process of keeping an eye on these metrics over time to understand what’s normal, identify changes, and detect problems. It's like watching your step count daily to see if you're meeting your fitness goal or checking your heart rate to make sure it's in a healthy range.
 
+| Exporter               | What it monitors         | Example Metrics                                                        | Notes                               |
+| ---------------------- | ------------------------ | ---------------------------------------------------------------------- | ----------------------------------- |
+| **Node Exporter**      | Server / hardware        | `node_cpu_seconds_total`, `node_memory_MemAvailable_bytes`             | Installed on each server            |
+| **MySQL Exporter**     | MySQL database           | `mysql_global_status_queries`, `mysql_global_status_threads_connected` | Monitors DB performance             |
+| **kube-state-metrics** | Kubernetes cluster state | `kube_pod_status_phase`, `kube_deployment_status_replicas`             | Does **not** collect CPU/memory     |
+| **Custom App Metrics** | Application-specific     | `http_requests_total`, `http_request_duration_seconds`                 | Exposed by developers at `/metrics` |
+
+
 ## 🚀 Prometheus
 - Prometheus is an open-source systems monitoring and alerting toolkit originally built at SoundCloud.
 - It is known for its robust data model, powerful query language (PromQL), and the ability to generate alerts based on the collected time-series data.
